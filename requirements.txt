@@ -1,0 +1,39 @@
+# GAT-LSTM EUR/USD Forecasting System
+# Python Dependencies
+
+# Core
+numpy>=1.21.0
+pandas>=1.3.0
+
+# Deep Learning
+torch>=2.0.0
+torchvision>=0.15.0
+
+# Machine Learning
+scikit-learn>=1.0.0
+scipy>=1.7.0
+
+# Technical Analysis
+ta>=0.10.0
+
+# Visualization
+matplotlib>=3.5.0
+seaborn>=0.11.0
+plotly>=5.10.0
+
+# Web Application
+streamlit>=1.28.0
+
+# Data Sources (optional)
+yfinance>=0.2.0
+
+# Utilities
+joblib>=1.1.0
+tqdm>=4.62.0
+
+# Backtesting (optional)
+backtrader>=1.9.78
+
+# Development
+jupyter>=1.0.0
+ipykernel>=6.0.0
