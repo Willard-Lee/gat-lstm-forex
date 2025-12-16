@@ -243,3 +243,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 📧 Contact
 
 For questions about this research, please open an issue on GitHub or contact the author through the university.
+# gat-lstm-forex
