@@ -1,0 +1,70 @@
+============================================================
+GAT-LSTM TRAINING
+============================================================
+Device: cpu
+Random seed: 42
+
+[1/4] Preparing data...
+============================================================
+DATA PREPARATION PIPELINE
+============================================================
+✅ Data loaded: 2853 rows
+   Date range: 2014-01-01 00:00:00 to 2024-12-31 00:00:00
+✅ Features engineered: 11 technical indicators
+✅ Targets created: direction, return, volatility
+   Dropped 34 rows with NaN values
+✅ Temporal splits created:
+   Train: 1,522 samples (2014-01-01 to 2020-01-01)
+   Val:   520 samples (2020-01-01 to 2022-01-01)
+   Test:  777 samples (2022-01-01 to 2025-01-01)
+✅ Scaler saved to models/scaler.pkl
+✅ Features scaled (fitted on training data only)
+============================================================
+✅ Data pipeline complete!
+============================================================
+
+[2/4] Building graph...
+✅ Graph built:
+   Nodes: 11
+   Edges: 28 (threshold > 0.6)
+   Density: 25.45%
+
+[3/4] Creating data loaders...
+✅ DataLoaders created:
+   Train: 1492 samples, 47 batches
+   Val:   490 samples, 16 batches
+   Test:  747 samples, 24 batches
+
+[4/4] Initializing model...
+Model parameters: 403,012
+
+============================================================
+TRAINING START
+============================================================
+Epoch   1/100 | Train Loss: 1.3893 | Train Acc: 50.13% | Val Loss: 1.3873 | Val Acc: 48.98%
+Epoch   5/100 | Train Loss: 1.3874 | Train Acc: 51.41% | Val Loss: 1.3857 | Val Acc: 51.02%
+Epoch  10/100 | Train Loss: 1.3849 | Train Acc: 53.02% | Val Loss: 1.3875 | Val Acc: 49.59%
+Epoch  15/100 | Train Loss: 1.3818 | Train Acc: 52.28% | Val Loss: 1.3865 | Val Acc: 51.02%
+Epoch  20/100 | Train Loss: 1.3803 | Train Acc: 53.75% | Val Loss: 1.3867 | Val Acc: 51.84%
+Epoch  25/100 | Train Loss: 1.3825 | Train Acc: 53.15% | Val Loss: 1.3851 | Val Acc: 52.65%
+Epoch  30/100 | Train Loss: 1.3814 | Train Acc: 52.88% | Val Loss: 1.3870 | Val Acc: 50.41%
+Epoch  35/100 | Train Loss: 1.3786 | Train Acc: 53.95% | Val Loss: 1.3886 | Val Acc: 49.80%
+Epoch  40/100 | Train Loss: 1.3747 | Train Acc: 53.75% | Val Loss: 1.3861 | Val Acc: 51.63%
+Epoch  45/100 | Train Loss: 1.3818 | Train Acc: 52.21% | Val Loss: 1.3849 | Val Acc: 51.84%
+Epoch  50/100 | Train Loss: 1.3711 | Train Acc: 54.02% | Val Loss: 1.3858 | Val Acc: 52.04%
+Epoch  55/100 | Train Loss: 1.3706 | Train Acc: 53.82% | Val Loss: 1.3858 | Val Acc: 51.02%
+Epoch  60/100 | Train Loss: 1.3720 | Train Acc: 54.09% | Val Loss: 1.3931 | Val Acc: 52.04%
+Epoch  65/100 | Train Loss: 1.3503 | Train Acc: 55.83% | Val Loss: 1.3910 | Val Acc: 51.43%
+Epoch  70/100 | Train Loss: 1.3677 | Train Acc: 55.16% | Val Loss: 1.3939 | Val Acc: 51.84%
+Epoch  75/100 | Train Loss: 1.3608 | Train Acc: 55.97% | Val Loss: 1.3907 | Val Acc: 53.88%
+Epoch  80/100 | Train Loss: 1.3599 | Train Acc: 55.09% | Val Loss: 1.3963 | Val Acc: 50.20%
+Epoch  85/100 | Train Loss: 1.3791 | Train Acc: 52.14% | Val Loss: 1.3843 | Val Acc: 53.67%
+Epoch  90/100 | Train Loss: 1.3679 | Train Acc: 55.50% | Val Loss: 1.3900 | Val Acc: 48.78%
+Epoch  95/100 | Train Loss: 1.3663 | Train Acc: 54.89% | Val Loss: 1.3901 | Val Acc: 50.20%
+Epoch 100/100 | Train Loss: 1.3505 | Train Acc: 56.17% | Val Loss: 1.3967 | Val Acc: 51.02%
+
+============================================================
+TRAINING COMPLETE
+============================================================
+Best validation accuracy: 53.88%
+Model saved to: models/gat_lstm_model.pth

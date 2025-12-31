@@ -52,21 +52,21 @@ class HybridGATLSTM(nn.Module):
         
         # Embedding layer: Project scalar features to vectors
         # This gives the GAT more expressive power
-        self.embedding = nn.Linear(1, 16)
-        
-        # GAT Layer 1: 16 -> 16 features with attention
+        self.embedding = nn.Linear(1, 32)
+
+        # GAT Layer 1: 32 -> 32 features with attention
         self.gat1 = GraphAttentionLayer(
-            in_features=16,
-            out_features=16,
+            in_features=32,
+            out_features=32,
             dropout=dropout,
             alpha=0.2,
             concat=True  # Apply ELU activation
         )
-        
-        # GAT Layer 2: 16 -> 8 features
+
+        # GAT Layer 2: 32 -> 16 features
         self.gat2 = GraphAttentionLayer(
-            in_features=16,
-            out_features=8,
+            in_features=32,
+            out_features=16,
             dropout=dropout,
             alpha=0.2,
             concat=False  # No activation (final GAT layer)
@@ -79,38 +79,47 @@ class HybridGATLSTM(nn.Module):
         # LSTM processes the raw node values over time
         self.lstm = nn.LSTM(
             input_size=n_nodes,      # Number of features per timestep
-            hidden_size=64,          # LSTM hidden dimension
-            num_layers=2,            # Stacked LSTM layers
+            hidden_size=128,         # LSTM hidden dimension (increased)
+            num_layers=3,            # Stacked LSTM layers (increased)
             batch_first=True,        # Input shape: [Batch, Seq, Features]
             dropout=dropout
         )
-        
+
         # =====================================================================
         # COMBINATION AND PREDICTION HEADS
         # =====================================================================
+
+        # Combined dimension: LSTM output (128) + GAT output (16 * n_nodes)
+        combined_dim = 128 + (16 * n_nodes)
         
-        # Combined dimension: LSTM output (64) + GAT output (8 * n_nodes)
-        combined_dim = 64 + (8 * n_nodes)
-        
-        # Direction prediction head (binary classification)
+        # Direction prediction head (binary classification) - larger capacity
         self.head_dir = nn.Sequential(
-            nn.Linear(combined_dim, 32),
+            nn.Linear(combined_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(32, 1)
         )
-        
+
         # Return prediction head (regression)
         self.head_ret = nn.Sequential(
-            nn.Linear(combined_dim, 32),
+            nn.Linear(combined_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(32, 1)
         )
-        
+
         # Volatility prediction head (quantile regression)
         self.head_vol = nn.Sequential(
-            nn.Linear(combined_dim, 32),
+            nn.Linear(combined_dim, 64),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(64, 32),
             nn.ReLU(),
             nn.Dropout(dropout),
             nn.Linear(32, 2)  # Two quantiles for uncertainty

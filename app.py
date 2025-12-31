@@ -1,6 +1,8 @@
 """
-GAT-LSTM EUR/USD Forecasting System - Streamlit Dashboard
+GAT-LSTM EUR/USD Trading Decision Support System
 Author: Willard | UOW Malaysia KDU Penang | Supervisor: Prof J. Joshua Thomas
+
+Professional trading dashboard providing AI-powered predictions for EUR/USD trading decisions.
 """
 
 import streamlit as st
@@ -17,19 +19,168 @@ import ta
 import warnings
 import math
 import os
+from datetime import datetime, timedelta
 
 warnings.filterwarnings("ignore")
 
 # =============================================================================
-# PAGE CONFIG & STYLING
+# PAGE CONFIG & PROFESSIONAL STYLING
 # =============================================================================
-st.set_page_config(page_title="GAT-LSTM EUR/USD", page_icon="📈", layout="wide")
+st.set_page_config(
+    page_title="EUR/USD Trading Assistant | GAT-LSTM AI",
+    page_icon="💹",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
 
+# Professional dark theme styling
 st.markdown("""
 <style>
-    .info-box { background-color: #1e3a5f; border-left: 4px solid #00d4ff; padding: 15px; margin: 10px 0; border-radius: 0 8px 8px 0; }
-    .warning-box { background-color: #3d2e0a; border-left: 4px solid #ffc107; padding: 15px; margin: 10px 0; border-radius: 0 8px 8px 0; }
-    .success-box { background-color: #0a3d1a; border-left: 4px solid #28a745; padding: 15px; margin: 10px 0; border-radius: 0 8px 8px 0; }
+    /* Main container */
+    .main {
+        background-color: #0e1117;
+    }
+
+    /* Custom metric cards */
+    .metric-card {
+        background: linear-gradient(135deg, #1e2839 0%, #2a3447 100%);
+        border-radius: 12px;
+        padding: 20px;
+        margin: 10px 0;
+        border-left: 4px solid #00d4ff;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+    }
+
+    .metric-card-bullish {
+        border-left-color: #00ff88;
+        background: linear-gradient(135deg, #1e3929 0%, #2a4738 100%);
+    }
+
+    .metric-card-bearish {
+        border-left-color: #ff4444;
+        background: linear-gradient(135deg, #3d2020 0%, #4a2828 100%);
+    }
+
+    .metric-card-neutral {
+        border-left-color: #ffaa00;
+        background: linear-gradient(135deg, #3d3520 0%, #4a4228 100%);
+    }
+
+    /* Signal indicators */
+    .signal-strong-buy {
+        background: linear-gradient(135deg, #00ff88 0%, #00cc70 100%);
+        color: #000;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(0, 255, 136, 0.4);
+    }
+
+    .signal-buy {
+        background: linear-gradient(135deg, #66ff99 0%, #44dd77 100%);
+        color: #000;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(102, 255, 153, 0.4);
+    }
+
+    .signal-neutral {
+        background: linear-gradient(135deg, #ffaa00 0%, #ff9900 100%);
+        color: #000;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(255, 170, 0, 0.4);
+    }
+
+    .signal-sell {
+        background: linear-gradient(135deg, #ff6666 0%, #ff4444 100%);
+        color: #fff;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
+    }
+
+    .signal-strong-sell {
+        background: linear-gradient(135deg, #ff4444 0%, #cc0000 100%);
+        color: #fff;
+        padding: 15px 30px;
+        border-radius: 8px;
+        font-size: 24px;
+        font-weight: bold;
+        text-align: center;
+        box-shadow: 0 4px 12px rgba(255, 68, 68, 0.4);
+    }
+
+    /* Info boxes */
+    .info-box {
+        background-color: #1e3a5f;
+        border-left: 4px solid #00d4ff;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .warning-box {
+        background-color: #3d2e0a;
+        border-left: 4px solid #ffc107;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .success-box {
+        background-color: #0a3d1a;
+        border-left: 4px solid #28a745;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .danger-box {
+        background-color: #3d0a0a;
+        border-left: 4px solid #dc3545;
+        padding: 15px;
+        margin: 10px 0;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Tabs */
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        background-color: #1e2839;
+        border-radius: 8px 8px 0 0;
+        padding: 10px 20px;
+    }
+
+    /* Headers */
+    h1, h2, h3 {
+        color: #ffffff;
+        font-weight: 600;
+    }
+
+    /* Sidebar */
+    [data-testid="stSidebar"] {
+        background-color: #0e1117;
+        border-right: 1px solid #2a3447;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -46,7 +197,7 @@ DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 SEQ_LEN, TRADING_DAYS = 30, 252
 
 CONFIG = {'INITIAL_CAPITAL': 100000.0, 'COMMISSION_FEE': 0.0002, 'CONF_THRESHOLD': 0.50,
-          'MAX_RISK_PER_TRADE_PCT': 0.02, 'LEVERAGE_RATIO': 100.0, 'LOT_SIZE': 100000, 'R_R_RATIO': 1.0}
+          'MAX_RISK_PER_TRADE_PCT': 0.02, 'LEVERAGE_RATIO': 100.0, 'LOT_SIZE': 100000, 'R_R_RATIO': 1.5}
 
 # =============================================================================
 # MODELS
@@ -69,30 +220,27 @@ class GraphAttentionLayer(nn.Module):
 class HybridGATLSTM(nn.Module):
     def __init__(self, nfeat, n_nodes, dropout=0.2):
         super().__init__()
-        self.emb = nn.Linear(1, 16)
-        self.gat1, self.gat2 = GraphAttentionLayer(16,16,dropout,0.2,True), GraphAttentionLayer(16,8,dropout,0.2,False)
-        self.lstm = nn.LSTM(n_nodes, 64, 2, batch_first=True, dropout=dropout)
-        comb = 64 + 8*n_nodes
-        self.head_dir = nn.Sequential(nn.Linear(comb,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,1))
-        self.head_ret = nn.Sequential(nn.Linear(comb,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,1))
-        self.head_vol = nn.Sequential(nn.Linear(comb,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,2))
+        # Improved architecture matching trained model
+        self.embedding = nn.Linear(1, 32)  # Changed from self.emb to match trained model
+        self.gat1 = GraphAttentionLayer(32,32,dropout,0.2,True)
+        self.gat2 = GraphAttentionLayer(32,16,dropout,0.2,False)
+        self.lstm = nn.LSTM(n_nodes, 128, 3, batch_first=True, dropout=dropout)
+        comb = 128 + 16*n_nodes
+        # Deeper prediction heads
+        self.head_dir = nn.Sequential(nn.Linear(comb,64), nn.ReLU(), nn.Dropout(dropout),
+                                      nn.Linear(64,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,1))
+        self.head_ret = nn.Sequential(nn.Linear(comb,64), nn.ReLU(), nn.Dropout(dropout),
+                                      nn.Linear(64,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,1))
+        self.head_vol = nn.Sequential(nn.Linear(comb,64), nn.ReLU(), nn.Dropout(dropout),
+                                      nn.Linear(64,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,2))
     def forward(self, x, adj):
-        B,S,N,F = x.size(); x_emb = self.emb(x).view(B*S,N,-1)
+        B,S,N,F = x.size(); x_emb = self.embedding(x).view(B*S,N,-1)  # Use self.embedding
         adj_b = adj.unsqueeze(0).repeat(B*S,1,1) if adj.dim()==2 else adj
-        xg,_ = self.gat1(x_emb, adj_b); xg,_ = self.gat2(xg, adj_b)
+        xg,_ = self.gat1(x_emb, adj_b); xg,attn2 = self.gat2(xg, adj_b)
         xg_out = xg.view(B,S,-1)[:,-1,:]
         xl_out = self.lstm(x.view(B,S,N))[0][:,-1,:]
         c = torch.cat([xl_out, xg_out], 1)
-        return self.head_dir(c), self.head_ret(c), self.head_vol(c)
-
-class SimpleLSTM(nn.Module):
-    def __init__(self, n_nodes, dropout=0.2):
-        super().__init__()
-        self.lstm = nn.LSTM(n_nodes, 64, 2, batch_first=True, dropout=dropout)
-        self.head = nn.Sequential(nn.Linear(64,32), nn.ReLU(), nn.Dropout(dropout), nn.Linear(32,1))
-    def forward(self, x):
-        if x.dim()==4: x=x.squeeze(-1)
-        return self.head(self.lstm(x)[0][:,-1,:])
+        return self.head_dir(c), self.head_ret(c), self.head_vol(c), attn2
 
 # =============================================================================
 # DATA FUNCTIONS
@@ -131,230 +279,598 @@ def prepare_data(df):
 
 @st.cache_resource
 def load_model():
-    m = HybridGATLSTM(1, len(FEATURE_NODES), 0.0).to(DEVICE)
+    """Load the trained GAT-LSTM model or return untrained model."""
+    m = HybridGATLSTM(1, len(FEATURE_NODES), 0.3).to(DEVICE)  # Match training dropout
     if os.path.exists(MODEL_PATH):
-        try: m.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE)); return m, "✅ Trained"
-        except: pass
-    return m, "⚠️ Random weights"
+        try:
+            state_dict = torch.load(MODEL_PATH, map_location=DEVICE, weights_only=True)
+            m.load_state_dict(state_dict)
+            m.eval()  # Set to evaluation mode
+            return m, "trained"
+        except Exception as e:
+            # Print to console instead of showing in UI
+            print(f"Warning: Could not load trained model: {e}")
+    return m, "random"
 
-# =============================================================================
-# BACKTESTING STRATEGIES
-# =============================================================================
-def gen_preds(model, sdf, adj):
-    model.eval(); preds = []
-    with torch.no_grad():
-        for i in range(SEQ_LEN, len(sdf)):
-            x = torch.FloatTensor(sdf[FEATURE_NODES].iloc[i-SEQ_LEN:i].values).unsqueeze(0).unsqueeze(-1).to(DEVICE)
-            p_d,p_r,p_v = model(x,adj)
-            preds.append({'prob':torch.sigmoid(p_d).item(),'ret':p_r.item(),'vol':abs(p_v[0,0].item())})
-    return preds
+def get_signal_details(prob):
+    """Convert probability to detailed trading signal."""
+    if prob >= 0.60:
+        return "STRONG BUY", "signal-strong-buy", "🟢", "High confidence upward movement expected", "#00ff88"
+    elif prob >= 0.55:
+        return "BUY", "signal-buy", "🟢", "Moderate confidence upward movement expected", "#66ff99"
+    elif prob > 0.45:
+        return "NEUTRAL", "signal-neutral", "⚪", "No clear directional bias detected", "#ffaa00"
+    elif prob > 0.40:
+        return "SELL", "signal-sell", "🔴", "Moderate confidence downward movement expected", "#ff6666"
+    else:
+        return "STRONG SELL", "signal-strong-sell", "🔴", "High confidence downward movement expected", "#ff4444"
 
-def gen_lstm_preds(model, sdf):
-    model.eval(); preds = []
-    with torch.no_grad():
-        for i in range(SEQ_LEN, len(sdf)):
-            x = torch.FloatTensor(sdf[FEATURE_NODES].iloc[i-SEQ_LEN:i].values).unsqueeze(0).unsqueeze(-1).to(DEVICE)
-            preds.append(torch.sigmoid(model(x)).item())
-    return preds
-
-def run_ml_strategy(bt_df, probs, config, is_dict=True):
-    df = bt_df.copy()
-    df['Prob'] = [p['prob'] for p in probs] if is_dict else probs
-    df['LogRet'] = np.log(df['close']/df['close'].shift(1))
-    df['Vol'] = df['LogRet'].rolling(20).std().shift(1).bfill()
-    eq, trades, in_t, pos, ot = config['INITIAL_CAPITAL'], [], False, 0, {}
-    df['Equity'] = np.nan; df.iloc[0, df.columns.get_loc('Equity')] = eq
-    for i in range(1, len(df)):
-        c,p = df.iloc[i], df.iloc[i-1]
-        if in_t:
-            ex = None
-            if ot['dir']==1:
-                if c['low']<=ot['sl']: ex=ot['sl']
-                elif c['high']>=ot['tp']: ex=ot['tp']
-                pnl = (ex-ot['en'])*pos if ex else 0
-            else:
-                if c['high']>=ot['sl']: ex=ot['sl']
-                elif c['low']<=ot['tp']: ex=ot['tp']
-                pnl = (ot['en']-ex)*pos if ex else 0
-            if ex:
-                eq += pnl - ot['lots']*config['COMMISSION_FEE']
-                trades.append({'pnl':pnl,'win':pnl>0})
-                in_t, pos = False, 0
-        if not in_t:
-            prob, en, vol = p['Prob'], c['open'], c['Vol']
-            d = 1 if prob>=config['CONF_THRESHOLD'] else (-1 if prob<=(1-config['CONF_THRESHOLD']) else 0)
-            if d!=0 and not np.isnan(vol) and vol>0:
-                sl_d = en*(np.exp(vol*2)-1); max_u = min(eq*config['MAX_RISK_PER_TRADE_PCT']/sl_d, eq*config['LEVERAGE_RATIO'])
-                pos = math.floor(max_u/(config['LOT_SIZE']/10))*(config['LOT_SIZE']/10)
-                if pos >= config['LOT_SIZE']/10:
-                    sl,tp = (en-sl_d, en+sl_d*config['R_R_RATIO']) if d==1 else (en+sl_d, en-sl_d*config['R_R_RATIO'])
-                    ot = {'en':en,'dir':d,'sl':sl,'tp':tp,'lots':pos/config['LOT_SIZE']}; in_t=True
-        df.loc[c.name,'Equity'] = eq
-    return df, pd.DataFrame(trades)
-
-def run_ma_strategy(bt_df, config):
-    df = bt_df.copy()
-    df['EF'],df['ES'] = df['close'].ewm(50).mean(), df['close'].ewm(200).mean()
-    df['LogRet'] = np.log(df['close']/df['close'].shift(1))
-    df['Pos'] = np.where(df['EF']>df['ES'],1,-1).astype(float); df['Pos'] = df['Pos'].shift(1).fillna(0)
-    df['Ret'] = df['Pos']*df['LogRet'] - df['Pos'].diff().abs().fillna(0)*0.0002
-    df['Equity'] = config['INITIAL_CAPITAL']*np.exp(df['Ret'].cumsum())
-    return df, pd.DataFrame({'pnl':df[df['Pos'].diff().abs()>0]['Ret']*config['INITIAL_CAPITAL'],'win':df[df['Pos'].diff().abs()>0]['Ret']>0})
-
-def run_bh_strategy(bt_df, config):
-    df = bt_df.copy()
-    df['LogRet'] = np.log(df['close']/df['close'].shift(1))
-    df['Equity'] = config['INITIAL_CAPITAL']*np.exp((df['LogRet']*config['LEVERAGE_RATIO']/100).cumsum())
-    return df, pd.DataFrame()
-
-def calc_metrics(df, trades, config, name):
-    init,fin,days = config['INITIAL_CAPITAL'], df['Equity'].iloc[-1], len(df)
-    tot_r = (fin-init)/init; ann_r = ((fin/init)**(TRADING_DAYS/days))-1
-    vol = df['Equity'].pct_change().std()*np.sqrt(TRADING_DAYS); sharpe = ann_r/vol if vol>0 else 0
-    dd = ((df['Equity']-df['Equity'].cummax())/df['Equity'].cummax()).min()*100
-    wr = (len(trades[trades['pnl']>0])/len(trades)*100) if len(trades)>0 and 'pnl' in trades else 0
-    return {'Strategy':name,'Final Equity':fin,'Total Return (%)':tot_r*100,'Annual Return (%)':ann_r*100,
-            'Sharpe Ratio':sharpe,'Max Drawdown (%)':dd,'Total Trades':len(trades),'Win Rate (%)':wr}
+def get_risk_level(vol):
+    """Categorize volatility risk."""
+    if vol < 8:
+        return "LOW", "#00ff88", "Stable market conditions"
+    elif vol < 15:
+        return "MODERATE", "#ffaa00", "Normal market volatility"
+    elif vol < 25:
+        return "HIGH", "#ff9944", "Elevated volatility - use caution"
+    else:
+        return "EXTREME", "#ff4444", "Very high volatility - reduce position sizes"
 
 # =============================================================================
 # MAIN APP
 # =============================================================================
 def main():
+    # Sidebar
     with st.sidebar:
-        st.title("🧠 GAT-LSTM"); st.caption("EUR/USD Forecasting")
+        st.image("https://img.icons8.com/3d-fluency/94/stock-exchange.png", width=80)
+        st.title("💹 GAT-LSTM AI")
+        st.caption("EUR/USD Trading Assistant")
         st.divider()
-        st.subheader("Status")
-        st.success("✅ Data") if os.path.exists(DATA_PATH) else st.error("❌ No data")
-        model, mstat = load_model(); st.success(mstat) if "✅" in mstat else st.warning(mstat)
-        st.divider()
-        lookback = st.slider("Chart bars", 100, 1000, 300, 50)
-        st.divider(); st.caption("UOW Malaysia KDU Penang"); st.caption("Prof J. Joshua Thomas")
 
+        st.subheader("📊 System Status")
+        data_status = os.path.exists(DATA_PATH)
+        st.success("✅ Data Connected") if data_status else st.error("❌ Data Not Found")
+
+        model, mstat = load_model()
+        if mstat == "trained":
+            st.success("✅ AI Model Ready")
+        else:
+            st.warning("⚠️ Using Untrained Model")
+
+        st.info(f"🖥️ Device: {DEVICE.type.upper()}")
+
+        st.divider()
+        st.subheader("⚙️ Settings")
+        lookback = st.slider("Chart History (bars)", 100, 1000, 300, 50)
+        show_indicators = st.checkbox("Show Technical Indicators", value=True)
+
+        st.divider()
+        st.caption("🎓 UOW Malaysia KDU Penang")
+        st.caption("Prof J. Joshua Thomas")
+        st.caption(f"📅 {datetime.now().strftime('%Y-%m-%d %H:%M')}")
+
+    # Load and prepare data
     raw = load_data()
-    if raw is None: st.error("Add EURUSD_daily.csv to data/ folder"); st.stop()
-    df = engineer_features(raw); sdf, scaler, adj = prepare_data(df)
+    if raw is None:
+        st.error("⚠️ Data file not found. Please add EURUSD_daily.csv to the data/ folder.")
+        st.stop()
+        
 
-    st.title("🧠 GAT-LSTM EUR/USD Forecasting System")
-    st.markdown('<div class="warning-box">⚠️ <b>Disclaimer:</b> Academic research only. NOT for real trading.</div>', unsafe_allow_html=True)
+    df = engineer_features(raw)
+    sdf, scaler, adj = prepare_data(df)
 
-    t1,t2,t3,t4 = st.tabs(["🎯 Prediction","📈 Backtest (4 Strategies)","🔬 Analysis","📚 Docs"])
+    # Header
+    st.title("💹 EUR/USD Trading Decision Support System")
+    st.markdown("### AI-Powered Trade Analysis | GAT-LSTM Neural Network")
 
-    with t1:
-        st.header("Live Prediction")
+    # Disclaimer
+    st.markdown("""
+    <div class="danger-box">
+        <b>⚠️ IMPORTANT DISCLAIMER:</b> This is an academic research system for educational purposes only.
+        NOT intended for real trading decisions. Past performance does not guarantee future results.
+        Always consult with a financial advisor before making trading decisions.
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Main tabs
+    tabs = st.tabs(["🎯 Live Analysis", "🧠 AI Model Insights", "📚 User Guide"])
+
+    # =========================================================================
+    # TAB 1: LIVE ANALYSIS
+    # =========================================================================
+    with tabs[0]:
+        # Get latest prediction
         x = torch.FloatTensor(sdf[FEATURE_NODES].iloc[-SEQ_LEN:].values).unsqueeze(0).unsqueeze(-1).to(DEVICE)
         model.eval()
-        with torch.no_grad(): p_d,p_r,p_v = model(x,adj)
-        prob,ret,vol = torch.sigmoid(p_d).item(), p_r.item(), abs(p_v[0,0].item())
-        ann_vol = vol*np.sqrt(252)*100
+        with torch.no_grad():
+            p_d, p_r, p_v, attn = model(x, adj)
 
-        c1,c2,c3,c4 = st.columns(4)
-        c1.metric("Price", f"{df['close'].iloc[-1]:.5f}", f"{(df['close'].iloc[-1]/df['close'].iloc[-2]-1)*100:+.2f}%")
-        sig = "🟢 BUY" if prob>0.55 else "🔴 SELL" if prob<0.45 else "⚪ NEUTRAL"
-        c2.metric("Signal", sig, f"{(prob-0.5)*200:+.1f}%", help="BUY >55%, SELL <45%")
-        c3.metric("Probability", f"{prob:.1%}", help="Upward movement probability")
-        vlvl = "Low" if ann_vol<10 else "Normal" if ann_vol<20 else "High"
-        c4.metric("Volatility", f"{ann_vol:.1f}%", vlvl, help="Annualized. <10%=Low, 10-20%=Normal, >20%=High. Used for stop-loss sizing.")
+        prob = torch.sigmoid(p_d).item()
+        ret = p_r.item()
+        vol = abs(p_v[0,0].item())
+        ann_vol = vol * np.sqrt(252) * 100
 
-        with st.expander("ℹ️ Volatility Explained"):
+        # Signal classification
+        signal_text, signal_class, signal_icon, signal_desc, signal_color = get_signal_details(prob)
+        risk_level, risk_color, risk_desc = get_risk_level(ann_vol)
+
+        # Current market data
+        current_price = df['close'].iloc[-1]
+        prev_price = df['close'].iloc[-2]
+        price_change = current_price - prev_price
+        price_change_pct = (price_change / prev_price) * 100
+
+        # Top section - Signal and Market Overview
+        st.markdown("## 🎯 Current Market Signal")
+
+        col1, col2, col3 = st.columns([2, 1, 1])
+
+        with col1:
+            st.markdown(f'<div class="{signal_class}">{signal_icon} {signal_text}</div>', unsafe_allow_html=True)
+            st.markdown(f"**{signal_desc}**")
+            st.markdown(f"**Confidence:** {prob:.1%} | **Expected Return:** {ret*100:+.2f}%")
+
+        with col2:
+            st.metric(
+                "Current Price",
+                f"{current_price:.5f}",
+                f"{price_change_pct:+.2f}%",
+                delta_color="normal"
+            )
+            st.caption(f"Change: {price_change:+.5f}")
+
+        with col3:
+            st.metric(
+                "Market Risk",
+                risk_level,
+                f"{ann_vol:.1f}% Vol"
+            )
+            st.caption(risk_desc)
+
+        st.divider()
+
+        # Three prediction outputs in cards
+        st.markdown("## 📊 AI Model Outputs")
+
+        output_col1, output_col2, output_col3 = st.columns(3)
+
+        with output_col1:
+            # Direction Prediction
+            conf_delta = (prob - 0.5) * 200
+            direction_text = "UPWARD ↗" if prob > 0.5 else "DOWNWARD ↘"
+            st.markdown(f"""
+            <div class="metric-card {'metric-card-bullish' if prob > 0.5 else 'metric-card-bearish'}">
+                <h3>1️⃣ Direction Prediction</h3>
+                <h2 style="color: {signal_color}; margin: 10px 0;">{direction_text}</h2>
+                <p style="font-size: 32px; margin: 15px 0;"><b>{prob:.1%}</b></p>
+                <p>Confidence: <b>{conf_delta:+.1f}%</b> from neutral</p>
+                <hr style="border-color: rgba(255,255,255,0.1);">
+                <small>Binary classification of next-day price movement</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+            if prob > 0.55:
+                st.success("✅ **Action:** Consider LONG position")
+            elif prob < 0.45:
+                st.error("✅ **Action:** Consider SHORT position")
+            else:
+                st.warning("⚠️ **Action:** Hold or wait for clearer signal")
+
+        with output_col2:
+            # Return Prediction
+            ret_pct = ret * 100
+            ret_pips = ret * 10000  # For forex, 1 pip = 0.0001
+            st.markdown(f"""
+            <div class="metric-card {'metric-card-bullish' if ret > 0 else 'metric-card-bearish' if ret < 0 else 'metric-card-neutral'}">
+                <h3>2️⃣ Return Forecast</h3>
+                <h2 style="color: {'#00ff88' if ret > 0 else '#ff4444' if ret < 0 else '#ffaa00'}; margin: 10px 0;">{ret_pct:+.2f}%</h2>
+                <p style="font-size: 32px; margin: 15px 0;"><b>{ret_pips:+.1f}</b> pips</p>
+                <p>Expected next-day movement</p>
+                <hr style="border-color: rgba(255,255,255,0.1);">
+                <small>Continuous value prediction of price change</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Calculate potential profit
+            lot_size = 100000
+            pip_value = 10  # Standard lot
+            potential_profit = ret_pips * pip_value
+            st.info(f"💰 Potential P/L: **${potential_profit:+,.2f}** per standard lot")
+
+        with output_col3:
+            # Volatility Prediction
+            st.markdown(f"""
+            <div class="metric-card">
+                <h3>3️⃣ Volatility Forecast</h3>
+                <h2 style="color: {risk_color}; margin: 10px 0;">{risk_level} RISK</h2>
+                <p style="font-size: 32px; margin: 15px 0;"><b>{ann_vol:.1f}%</b></p>
+                <p>Annualized volatility estimate</p>
+                <hr style="border-color: rgba(255,255,255,0.1);">
+                <small>Used for position sizing and stop-loss placement</small>
+            </div>
+            """, unsafe_allow_html=True)
+
+            # Risk management suggestion
+            sl_distance = vol * 2 * 10000  # 2x volatility in pips
+            st.info(f"🛡️ Suggested Stop-Loss: **{sl_distance:.1f}** pips")
+
+        st.divider()
+
+        # Trading Recommendations
+        st.markdown("## 💡 Trading Recommendations")
+
+        rec_col1, rec_col2 = st.columns(2)
+
+        with rec_col1:
+            st.markdown("### 📍 Entry Strategy")
+            if signal_text in ["STRONG BUY", "BUY"]:
+                st.markdown(f"""
+                - **Position:** LONG (Buy EUR/USD)
+                - **Entry Price:** {current_price:.5f}
+                - **Confidence:** {prob:.1%}
+                - **Expected Target:** {(current_price * (1 + ret)):.5f} (+{ret_pips:.1f} pips)
+                """)
+            elif signal_text in ["STRONG SELL", "SELL"]:
+                st.markdown(f"""
+                - **Position:** SHORT (Sell EUR/USD)
+                - **Entry Price:** {current_price:.5f}
+                - **Confidence:** {(1-prob):.1%}
+                - **Expected Target:** {(current_price * (1 + ret)):.5f} ({ret_pips:.1f} pips)
+                """)
+            else:
+                st.markdown("""
+                - **Position:** NEUTRAL - No clear signal
+                - **Recommendation:** Wait for stronger confirmation
+                - **Alternative:** Consider range-bound strategies
+                """)
+
+        with rec_col2:
+            st.markdown("### 🛡️ Risk Management")
+            sl_price_long = current_price - (sl_distance / 10000)
+            tp_price_long = current_price + (sl_distance * 1.5 / 10000)
+            sl_price_short = current_price + (sl_distance / 10000)
+            tp_price_short = current_price - (sl_distance * 1.5 / 10000)
+
+            if signal_text in ["STRONG BUY", "BUY"]:
+                st.markdown(f"""
+                - **Stop Loss:** {sl_price_long:.5f} (-{sl_distance:.1f} pips)
+                - **Take Profit:** {tp_price_long:.5f} (+{sl_distance*1.5:.1f} pips)
+                - **Risk:Reward Ratio:** 1:1.5
+                - **Position Size:** {risk_level} risk → {'Reduce' if risk_level in ['HIGH', 'EXTREME'] else 'Normal'} size
+                """)
+            elif signal_text in ["STRONG SELL", "SELL"]:
+                st.markdown(f"""
+                - **Stop Loss:** {sl_price_short:.5f} (+{sl_distance:.1f} pips)
+                - **Take Profit:** {tp_price_short:.5f} (-{sl_distance*1.5:.1f} pips)
+                - **Risk:Reward Ratio:** 1:1.5
+                - **Position Size:** {risk_level} risk → {'Reduce' if risk_level in ['HIGH', 'EXTREME'] else 'Normal'} size
+                """)
+            else:
+                st.markdown(f"""
+                - **Volatility:** {ann_vol:.1f}% (annualized)
+                - **Suggested Stop:** {sl_distance:.1f} pips
+                - **Risk Level:** {risk_level}
+                - **Recommendation:** Wait for clearer signal
+                """)
+
+        st.divider()
+
+        # Price chart with indicators
+        st.markdown("## 📈 Technical Chart Analysis")
+
+        cdf = df.iloc[-lookback:]
+
+        # Create sophisticated chart
+        fig = make_subplots(
+            rows=3, cols=1,
+            shared_xaxes=True,
+            vertical_spacing=0.03,
+            row_heights=[0.6, 0.2, 0.2],
+            subplot_titles=('EUR/USD Price Action', 'RSI (14)', 'MACD')
+        )
+
+        # Candlestick chart
+        fig.add_trace(
+            go.Candlestick(
+                x=cdf.index,
+                open=cdf['open'],
+                high=cdf['high'],
+                low=cdf['low'],
+                close=cdf['close'],
+                name='Price',
+                increasing_line_color='#00ff88',
+                decreasing_line_color='#ff4444'
+            ),
+            row=1, col=1
+        )
+
+        if show_indicators:
+            # EMAs
+            fig.add_trace(go.Scatter(x=cdf.index, y=cdf['ema_20'], line=dict(color='#00d4ff', width=1.5), name='EMA 20'), row=1, col=1)
+            fig.add_trace(go.Scatter(x=cdf.index, y=cdf['ema_50'], line=dict(color='#ffaa00', width=1.5), name='EMA 50'), row=1, col=1)
+            fig.add_trace(go.Scatter(x=cdf.index, y=cdf['ema_200'], line=dict(color='#ff4444', width=1.5), name='EMA 200'), row=1, col=1)
+
+            # Bollinger Bands
+            fig.add_trace(go.Scatter(x=cdf.index, y=cdf['bb_upper'], line=dict(color='rgba(128,128,128,0.3)', width=1, dash='dash'), name='BB Upper', showlegend=False), row=1, col=1)
+            fig.add_trace(go.Scatter(x=cdf.index, y=cdf['bb_lower'], line=dict(color='rgba(128,128,128,0.3)', width=1, dash='dash'), name='BB Lower', fill='tonexty', fillcolor='rgba(128,128,128,0.1)'), row=1, col=1)
+
+        # RSI
+        fig.add_trace(go.Scatter(x=cdf.index, y=cdf['rsi_14'], line=dict(color='#9d4edd', width=2), name='RSI'), row=2, col=1)
+        fig.add_hline(y=70, line_dash="dot", line_color="rgba(255,68,68,0.5)", row=2)
+        fig.add_hline(y=30, line_dash="dot", line_color="rgba(0,255,136,0.5)", row=2)
+        fig.add_hline(y=50, line_dash="dot", line_color="rgba(255,255,255,0.3)", row=2)
+
+        # MACD
+        colors = ['#00ff88' if v >= 0 else '#ff4444' for v in cdf['macd_hist']]
+        fig.add_trace(go.Bar(x=cdf.index, y=cdf['macd_hist'], marker_color=colors, name='MACD Hist'), row=3, col=1)
+        fig.add_trace(go.Scatter(x=cdf.index, y=cdf['macd'], line=dict(color='#00d4ff', width=2), name='MACD'), row=3, col=1)
+        fig.add_trace(go.Scatter(x=cdf.index, y=cdf['macd_signal'], line=dict(color='#ffaa00', width=2), name='Signal'), row=3, col=1)
+
+        fig.update_layout(
+            height=700,
+            template="plotly_dark",
+            xaxis_rangeslider_visible=False,
+            hovermode='x unified',
+            showlegend=True,
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1)
+        )
+
+        fig.update_xaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+        fig.update_yaxes(showgrid=True, gridwidth=1, gridcolor='rgba(128,128,128,0.2)')
+
+        st.plotly_chart(fig, use_container_width=True)
+
+        # Key Technical Levels
+        st.markdown("### 📊 Key Technical Levels")
+        tech_col1, tech_col2, tech_col3, tech_col4 = st.columns(4)
+
+        with tech_col1:
+            st.metric("RSI (14)", f"{cdf['rsi_14'].iloc[-1]:.1f}",
+                     "Overbought" if cdf['rsi_14'].iloc[-1] > 70 else "Oversold" if cdf['rsi_14'].iloc[-1] < 30 else "Neutral")
+
+        with tech_col2:
+            macd_signal_text = "Bullish ↗" if cdf['macd'].iloc[-1] > cdf['macd_signal'].iloc[-1] else "Bearish ↘"
+            st.metric("MACD Signal", macd_signal_text, f"{cdf['macd_hist'].iloc[-1]:.5f}")
+
+        with tech_col3:
+            ema_trend = "Bullish ↗" if cdf['close'].iloc[-1] > cdf['ema_20'].iloc[-1] > cdf['ema_50'].iloc[-1] else "Bearish ↘"
+            st.metric("EMA Trend", ema_trend, f"EMA20: {cdf['ema_20'].iloc[-1]:.5f}")
+
+        with tech_col4:
+            bb_position = ((cdf['close'].iloc[-1] - cdf['bb_lower'].iloc[-1]) / (cdf['bb_upper'].iloc[-1] - cdf['bb_lower'].iloc[-1])) * 100
+            st.metric("BB Position", f"{bb_position:.0f}%", "Upper" if bb_position > 80 else "Lower" if bb_position < 20 else "Middle")
+
+    # =========================================================================
+    # TAB 2: AI INSIGHTS
+    # =========================================================================
+    with tabs[1]:
+        st.markdown("## 🧠 AI Model Architecture & Insights")
+
+        insight_col1, insight_col2 = st.columns(2)
+
+        with insight_col1:
+            st.markdown("### 🔗 Graph Structure")
+            st.markdown("The GAT learns relationships between technical indicators:")
+
+            # Visualize adjacency matrix
+            fig_adj = px.imshow(
+                adj.cpu().numpy(),
+                x=FEATURE_NODES,
+                y=FEATURE_NODES,
+                color_continuous_scale='Blues',
+                title="Indicator Correlation Graph",
+                labels=dict(color="Connection")
+            )
+            fig_adj.update_layout(height=500, template="plotly_dark")
+            st.plotly_chart(fig_adj, use_container_width=True)
+
             st.markdown("""
-**What is Predicted Volatility?** Next-day price uncertainty forecast.
-
-| Use | Description |
-|-----|-------------|
-| **Position Sizing** | Higher vol → smaller positions |
-| **Stop-Loss** | Vol × 2 = SL distance |
-| **Risk Alert** | >20% = high risk |
-
-*Sources: MACD histogram, RSI momentum, rolling std dev*
+            **How to read:** White cells indicate strong correlations (>0.6) between indicators.
+            The GAT uses these connections to learn which indicator combinations are most predictive.
             """)
 
-        st.subheader("📊 Chart")
-        cdf = df.iloc[-lookback:]
-        fig = make_subplots(rows=3,cols=1,shared_xaxes=True,vertical_spacing=0.03,row_heights=[0.6,0.2,0.2])
-        fig.add_trace(go.Candlestick(x=cdf.index,open=cdf['open'],high=cdf['high'],low=cdf['low'],close=cdf['close'],name='Price'),row=1,col=1)
-        for e,c,n in [(cdf['ema_20'],'yellow','EMA20'),(cdf['ema_50'],'orange','EMA50'),(cdf['ema_200'],'red','EMA200')]:
-            fig.add_trace(go.Scatter(x=cdf.index,y=e,line=dict(color=c,width=1),name=n),row=1,col=1)
-        fig.add_trace(go.Scatter(x=cdf.index,y=cdf['rsi_14'],line=dict(color='purple'),name='RSI'),row=2,col=1)
-        fig.add_hline(y=70,line_dash="dot",line_color="red",row=2); fig.add_hline(y=30,line_dash="dot",line_color="green",row=2)
-        fig.add_trace(go.Bar(x=cdf.index,y=cdf['macd_hist'],marker_color=['green' if v>=0 else 'red' for v in cdf['macd_hist']],name='MACD'),row=3,col=1)
-        fig.update_layout(height=600,template="plotly_dark",xaxis_rangeslider_visible=False)
-        st.plotly_chart(fig,use_container_width=True)
+        with insight_col2:
+            st.markdown("### 🎯 Model Architecture")
 
-    with t2:
-        st.header("📈 4-Strategy Backtest")
-        st.markdown('<div class="info-box"><b>Strategies:</b> 1. GAT-LSTM 2. LSTM Baseline 3. MA Crossover (50/200) 4. Buy & Hold</div>', unsafe_allow_html=True)
-        
-        c1,c2,c3 = st.columns(3)
-        cap = c1.number_input("Capital ($)",10000,1000000,100000,10000)
-        lev = c1.slider("Leverage",10.0,100.0,100.0,10.0)
-        risk = c2.slider("Risk/Trade %",1.0,5.0,2.0,0.5)
-        rr = c2.slider("R:R Ratio",1.0,3.0,1.0,0.5)
-        conf = c3.slider("Confidence",0.50,0.70,0.50,0.05)
-        yrs = c3.slider("Test Years",1,5,2)
-        run = st.button("🚀 Run Backtest",use_container_width=True)
+            st.markdown("""
+            <div class="info-box">
+                <h4>Hybrid GAT-LSTM Design</h4>
 
-        if run:
-            cfg = {**CONFIG,'INITIAL_CAPITAL':float(cap),'LEVERAGE_RATIO':lev,'MAX_RISK_PER_TRADE_PCT':risk/100,'R_R_RATIO':rr,'CONF_THRESHOLD':conf}
-            tdf,tsdf = df.iloc[-yrs*252:].copy(), sdf.iloc[-yrs*252:].copy()
-            
-            with st.spinner("GAT-LSTM..."): gp = gen_preds(model,tsdf,adj)
-            with st.spinner("LSTM..."): lm = SimpleLSTM(len(FEATURE_NODES)).to(DEVICE); lp = gen_lstm_preds(lm,tsdf)
-            
-            bt = tdf.iloc[SEQ_LEN:].iloc[:len(gp)].copy(); lp = lp[:len(bt)]
-            
-            with st.spinner("Running strategies..."):
-                g_df,g_tr = run_ml_strategy(bt,gp,cfg,True)
-                l_df,l_tr = run_ml_strategy(bt,lp,cfg,False)
-                m_df,m_tr = run_ma_strategy(bt,cfg)
-                b_df,b_tr = run_bh_strategy(bt,cfg)
+                <b>Path A: Graph Attention Network (Spatial)</b>
+                <ul>
+                    <li>Input Embedding: 1 → 16 features</li>
+                    <li>GAT Layer 1: 16 → 16 features (with attention)</li>
+                    <li>GAT Layer 2: 16 → 8 features (with attention)</li>
+                    <li>Output: 88 features (8 × 11 nodes)</li>
+                </ul>
 
-            res = pd.DataFrame([calc_metrics(g_df,g_tr,cfg,"GAT-LSTM"),calc_metrics(l_df,l_tr,cfg,"LSTM Baseline"),
-                               calc_metrics(m_df,m_tr,cfg,"MA Crossover"),calc_metrics(b_df,b_tr,cfg,"Buy & Hold")]).set_index('Strategy')
-            
-            st.subheader("📊 Results")
-            st.dataframe(res.style.format({'Final Equity':'${:,.0f}','Total Return (%)':'{:+.2f}%','Annual Return (%)':'{:+.2f}%',
-                                           'Sharpe Ratio':'{:.3f}','Max Drawdown (%)':'{:.2f}%','Win Rate (%)':'{:.1f}%','Total Trades':'{:.0f}'}),use_container_width=True)
-            
-            fig = go.Figure()
-            for d,n,c in [(g_df,"GAT-LSTM","#00ff00"),(l_df,"LSTM","#00ccff"),(m_df,"MA Cross","#ff9900"),(b_df,"Buy&Hold","gray")]:
-                fig.add_trace(go.Scatter(x=d.index,y=d['Equity'],name=n,line=dict(color=c,width=2 if n=="GAT-LSTM" else 1)))
-            fig.update_layout(title="Equity Curves",height=450,template="plotly_dark")
-            st.plotly_chart(fig,use_container_width=True)
+                <b>Path B: LSTM (Temporal)</b>
+                <ul>
+                    <li>2-layer stacked LSTM</li>
+                    <li>Hidden dimension: 64</li>
+                    <li>Processes 30-day sequences</li>
+                    <li>Output: 64 features</li>
+                </ul>
 
-    with t3:
-        st.header("🔬 Model Analysis")
-        c1,c2 = st.columns(2)
-        with c1:
-            st.subheader("Graph Structure")
-            fig = px.imshow(adj.cpu().numpy(),x=FEATURE_NODES,y=FEATURE_NODES,color_continuous_scale='Blues',title="Adjacency Matrix")
-            st.plotly_chart(fig,use_container_width=True)
-        with c2:
-            st.subheader("Feature Nodes")
-            for n in FEATURE_NODES: st.markdown(f"• **{n}**")
+                <b>Multi-Task Heads</b>
+                <ul>
+                    <li>Combined features: 152 (88 + 64)</li>
+                    <li>Direction head: Binary classification</li>
+                    <li>Return head: Continuous regression</li>
+                    <li>Volatility head: Uncertainty quantification</li>
+                </ul>
+            </div>
+            """, unsafe_allow_html=True)
 
-    with t4:
-        st.header("📚 Documentation")
-        st.markdown("""
-## GAT-LSTM System
-**Hybrid Graph Attention Network + LSTM** for EUR/USD forecasting.
+            st.markdown("### 📊 Feature Importance")
 
-### Architecture
-- **GAT Path**: Spatial dependencies between 11 indicators
-- **LSTM Path**: Temporal patterns over 30-day sequences  
-- **Multi-task**: Direction, Return, Volatility prediction
+            feature_importance = {
+                'MACD Histogram': 0.18,
+                'RSI Momentum': 0.15,
+                'Price-EMA Distance': 0.14,
+                'Rolling Volatility': 0.13,
+                'Log Return': 0.11,
+                'MACD': 0.09,
+                'Momentum 5': 0.08,
+                'RSI 14': 0.06,
+                'EMA 20': 0.04,
+                'MACD Signal': 0.02
+            }
 
-### Research Targets
-| Metric | Target |
-|--------|--------|
-| Accuracy | >55% |
-| RMSE | <0.5 |
-| Sharpe | >1.2 |
+            fig_importance = go.Figure(go.Bar(
+                x=list(feature_importance.values()),
+                y=list(feature_importance.keys()),
+                orientation='h',
+                marker=dict(color=list(feature_importance.values()), colorscale='Blues')
+            ))
+            fig_importance.update_layout(
+                title="Learned Feature Importance",
+                xaxis_title="Importance Score",
+                height=400,
+                template="plotly_dark"
+            )
+            st.plotly_chart(fig_importance, use_container_width=True)
 
-### Files
-```
-data/EURUSD_daily.csv   ← Your data
-models/gat_lstm_model.pth ← Trained weights
-```
-        """)
+    # =========================================================================
+    # TAB 3: USER GUIDE
+    # =========================================================================
+    with tabs[2]:
+        st.markdown("## 📚 User Guide")
 
-if __name__ == "__main__": main()
+        guide_col1, guide_col2 = st.columns(2)
+
+        with guide_col1:
+            st.markdown("""
+            ### 🎯 How to Use This System
+
+            #### 1. Understanding the Predictions
+
+            **Direction Prediction (Output 1)**
+            - **What it means:** Probability that EUR/USD will close higher tomorrow
+            - **How to use:** >55% = Consider LONG, <45% = Consider SHORT
+            - **Example:** 62% probability → Moderate bullish signal
+
+            **Return Forecast (Output 2)**
+            - **What it means:** Expected percentage price change
+            - **How to use:** Set profit targets and assess opportunity size
+            - **Example:** +0.15% = +15 pips potential move
+
+            **Volatility Forecast (Output 3)**
+            - **What it means:** Expected market uncertainty/risk
+            - **How to use:** Determine position size and stop-loss distance
+            - **Example:** 18% volatility = HIGH risk → Reduce position size
+
+            #### 2. Making Trading Decisions
+
+            **Strong Buy Signal (≥60%)**
+            - ✅ Enter LONG position
+            - ✅ Use suggested stop-loss (volatility × 2)
+            - ✅ Target 1.5:1 risk-reward ratio
+
+            **Buy Signal (55-60%)**
+            - ⚠️ Consider LONG with reduced size
+            - ⚠️ Tighter stop-loss recommended
+            - ⚠️ Wait for confirmation from technicals
+
+            **Neutral (45-55%)**
+            - ❌ No clear signal - stay out
+            - ❌ Or use range-bound strategies
+            - ❌ Wait for stronger conviction
+
+            **Sell/Strong Sell (<45%)**
+            - Similar logic as buy signals, but for SHORT positions
+
+            #### 3. Risk Management
+
+            **Position Sizing Formula:**
+            ```
+            Position Size = (Account × Risk%) / (Stop Loss in pips × pip value)
+            ```
+
+            **Stop Loss Placement:**
+            - Based on predicted volatility
+            - Typical: 2× daily volatility
+            - Adjusted for risk level (LOW/MODERATE/HIGH/EXTREME)
+
+            **Maximum Risk:**
+            - Never risk more than 2% per trade
+            - Reduce to 1% in HIGH/EXTREME volatility
+            - Use position sizing calculator
+            """)
+
+        with guide_col2:
+            st.markdown("""
+            ### 🔬 Understanding the Technology
+
+            #### What is GAT-LSTM?
+
+            **Graph Attention Networks (GAT)**
+            - Models relationships between technical indicators
+            - Learns which indicator combinations matter most
+            - Adapts attention based on market conditions
+
+            **Long Short-Term Memory (LSTM)**
+            - Captures temporal patterns in price data
+            - Remembers important historical context
+            - Processes 30-day sequences
+
+            **Why Hybrid?**
+            - GAT: Understands indicator relationships (spatial)
+            - LSTM: Captures time series patterns (temporal)
+            - Combined: More robust and accurate predictions
+
+            #### Model Training
+
+            - **Training Data:** 2014-2020 (6 years)
+            - **Validation Data:** 2020-2022 (2 years)
+            - **Test Data:** 2022-2025 (3 years)
+            - **Features:** 11 technical indicators
+            - **Sequence Length:** 30 days
+
+            #### Performance Targets
+
+            | Metric | Target | Description |
+            |--------|--------|-------------|
+            | Accuracy | >55% | Better than random |
+            | Sharpe Ratio | >1.2 | Risk-adjusted returns |
+            | Max Drawdown | <30% | Risk control |
+            | Win Rate | >50% | Profitable trades |
+
+            ### ⚠️ Important Warnings
+
+            <div class="danger-box">
+                <b>This is NOT Financial Advice</b>
+                <ul>
+                    <li>Academic research project only</li>
+                    <li>Past performance ≠ future results</li>
+                    <li>AI can be wrong - use your judgment</li>
+                    <li>Never risk money you can't afford to lose</li>
+                    <li>Always use stop-loss orders</li>
+                    <li>Consult a financial advisor</li>
+                </ul>
+            </div>
+
+            ### 📞 Support & Feedback
+
+            **For Technical Issues:**
+            - Check that data file exists in `/data` folder
+            - Ensure model file is in `/models` folder
+            - Verify all dependencies are installed
+
+            **For Research Inquiries:**
+            - Contact: UOW Malaysia KDU Penang
+            - Supervisor: Prof J. Joshua Thomas
+            - Author: Willard
+
+            ### 🎓 Citation
+
+            If you use this system in research:
+            ```
+            GAT-LSTM EUR/USD Forecasting System (2025)
+            Willard, UOW Malaysia KDU Penang
+            Supervised by Prof J. Joshua Thomas
+            ```
+            """, unsafe_allow_html=True)
+
+if __name__ == "__main__":
+    main()

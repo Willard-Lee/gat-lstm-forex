@@ -41,17 +41,17 @@ FEATURE_NODES = [
 # =============================================================================
 # Sequence and batch
 SEQ_LEN = 30
-BATCH_SIZE = 64
+BATCH_SIZE = 32  # Smaller batch for better generalization
 
-# GAT parameters
-GAT_HIDDEN_DIM = 16
-GAT_OUTPUT_DIM = 8
+# GAT parameters (increased capacity)
+GAT_HIDDEN_DIM = 32  # Increased from 16
+GAT_OUTPUT_DIM = 16  # Increased from 8
 GAT_DROPOUT = 0.2
 GAT_ALPHA = 0.2  # LeakyReLU negative slope
 
-# LSTM parameters
-LSTM_HIDDEN_DIM = 64
-LSTM_NUM_LAYERS = 2
+# LSTM parameters (increased capacity)
+LSTM_HIDDEN_DIM = 128  # Increased from 64
+LSTM_NUM_LAYERS = 3  # Increased from 2
 LSTM_DROPOUT = 0.2
 
 # Graph construction
@@ -61,14 +61,14 @@ CORRELATION_METHOD = 'spearman'
 # =============================================================================
 # TRAINING HYPERPARAMETERS
 # =============================================================================
-EPOCHS = 50
-LEARNING_RATE = 0.001
-MODEL_DROPOUT = 0.5
+EPOCHS = 100  # Increased for better convergence
+LEARNING_RATE = 0.0005  # Lower for stable training
+MODEL_DROPOUT = 0.3  # Reduced to prevent underfitting
 
-# Multi-task loss weights
-LOSS_WEIGHT_DIRECTION = 1.0
-LOSS_WEIGHT_VOLATILITY = 0.5
-LOSS_WEIGHT_RETURN = 0.1
+# Multi-task loss weights (prioritize direction prediction)
+LOSS_WEIGHT_DIRECTION = 2.0  # Increased - most important for trading
+LOSS_WEIGHT_VOLATILITY = 0.3  # Reduced
+LOSS_WEIGHT_RETURN = 0.2  # Slightly increased for better return prediction
 
 # =============================================================================
 # BACKTESTING CONFIGURATION
