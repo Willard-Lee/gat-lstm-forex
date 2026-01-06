@@ -507,4 +507,3 @@ You are free to:
 
 **Built with ❤️ for advancing financial ML research**
 
-*Last updated: December 31, 2024*
